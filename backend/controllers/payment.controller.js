@@ -2,6 +2,7 @@ import Coupon from "../models/coupon.model.js";
 import Order from "../models/order.model.js";
 import { stripe } from "../lib/stripe.js";
 
+// Create a Stripe Checkout Session so the frontend can redirect the user to Stripe to pay.
 export const createCheckoutSession = async (req, res) => {
   try {
     const { products, couponCode } = req.body;
@@ -81,6 +82,7 @@ export const createCheckoutSession = async (req, res) => {
   }
 };
 
+// After payment, confirm payment is paid and then: deactivate coupon if used, create an Order in your DB
 export const checkoutSuccess = async (req, res) => {
   try {
     const { sessionId } = req.body;
@@ -123,15 +125,14 @@ export const checkoutSuccess = async (req, res) => {
     }
   } catch (error) {
     console.error("Error processing successful checkout:", error);
-    res
-      .status(500)
-      .json({
-        message: "Error processing successful checkout",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Error processing successful checkout",
+      error: error.message,
+    });
   }
 };
 
+// Create a Stripe coupon object so Stripe can apply discount on the checkout page.
 async function createStripeCoupon(discountPercentage) {
   const coupon = await stripe.coupons.create({
     percent_off: discountPercentage,
@@ -141,6 +142,7 @@ async function createStripeCoupon(discountPercentage) {
   return coupon.id;
 }
 
+// Give the user a new coupon reward (like “spend $200 get 10% off”).
 async function createNewCoupon(userId) {
   await Coupon.findOneAndDelete({ userId });
 
